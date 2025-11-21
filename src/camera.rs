@@ -78,7 +78,7 @@ impl CameraController {
             self.camera.target.y -= self.move_speed * delta_time;
         }
 
-        // Rotacion con flechas
+        // Rotación con flechas
         if rl.is_key_down(KeyboardKey::KEY_LEFT) {
             let angle = -self.rotation_speed * delta_time * std::f32::consts::PI / 180.0;
             self.rotate_camera(angle);
@@ -118,6 +118,7 @@ impl CameraController {
                 self.camera.target = self.warp_target_body_pos;
             }
         } else if let Some(target) = self.target_position {
+            // Ease-in-out
             let t = self.warp_progress;
             let smooth_t = t * t * (3.0 - 2.0 * t);
             

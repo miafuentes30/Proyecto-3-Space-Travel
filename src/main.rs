@@ -416,3 +416,5 @@ fn draw_ui(d: &mut RaylibDrawHandle, camera: &CameraController, _bodies: &[Celes
         Color::YELLOW,
     );
 }
+
+// (Shader params removed; using procedural CPU textures instead)
