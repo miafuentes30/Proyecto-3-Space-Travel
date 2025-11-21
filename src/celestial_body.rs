@@ -44,7 +44,6 @@ impl CelestialBody {
         orbital_speed: f32,
         rotation_speed: f32,
     ) -> Self {
-        // Por defecto rocoso, se puede cambiar manualmente
         let body_type = BodyType::RockyPlanet;
         
         Self {
@@ -109,7 +108,6 @@ impl CelestialBody {
         _shader_manager: Option<&ShaderManager>,
         _time: f32,
     ) {
-        // Renderizado usando esfera simple (texturas CPU aplicadas en main)
         d.draw_sphere(self.position, self.radius, self.color);
     }
 

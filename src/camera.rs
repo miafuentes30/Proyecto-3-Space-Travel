@@ -9,7 +9,7 @@ pub struct CameraController {
     pub is_warping: bool,
     pub start_warp_pos: Vector3,
     warp_offset: Vector3,
-    warp_target_body_pos: Vector3,  // Posición del cuerpo celeste destino
+    warp_target_body_pos: Vector3,
 }
 
 impl CameraController {
@@ -28,7 +28,7 @@ impl CameraController {
             warp_progress: 0.0,
             is_warping: false,
             start_warp_pos: position,
-            warp_offset: target - position,  // Dirección inicial hacia el origen
+            warp_offset: target - position,
             warp_target_body_pos: Vector3::zero(),
         }
     }
@@ -42,7 +42,7 @@ impl CameraController {
         let forward = (self.camera.target - self.camera.position).normalized();
         let right = forward.cross(self.camera.up).normalized();
 
-        // Movimiento en el plano eclíptico (Y fijo)
+        // WASD: movimiento horizontal
         if rl.is_key_down(KeyboardKey::KEY_W) {
             self.camera.position.x += forward.x * self.move_speed * delta_time;
             self.camera.position.z += forward.z * self.move_speed * delta_time;
@@ -68,7 +68,7 @@ impl CameraController {
             self.camera.target.z += right.z * self.move_speed * delta_time;
         }
 
-        // Movimiento 3D (arriba/abajo)
+        // Espacio/Shift: arriba/abajo
         if rl.is_key_down(KeyboardKey::KEY_SPACE) {
             self.camera.position.y += self.move_speed * delta_time;
             self.camera.target.y += self.move_speed * delta_time;
@@ -78,7 +78,7 @@ impl CameraController {
             self.camera.target.y -= self.move_speed * delta_time;
         }
 
-        // Rotación de cámara
+        // Rotacion con flechas
         if rl.is_key_down(KeyboardKey::KEY_LEFT) {
             let angle = -self.rotation_speed * delta_time * std::f32::consts::PI / 180.0;
             self.rotate_camera(angle);
@@ -104,8 +104,6 @@ impl CameraController {
         self.warp_progress = 0.0;
         self.start_warp_pos = self.camera.position;
         self.target_position = Some(target);
-        // Calcular la posición del cuerpo celeste (el target menos el offset de visualización)
-        // El offset típico es (0, 5, 15) según main.rs
         self.warp_target_body_pos = target - Vector3::new(0.0, 5.0, 15.0);
     }
 
@@ -117,11 +115,9 @@ impl CameraController {
             self.is_warping = false;
             if let Some(target) = self.target_position {
                 self.camera.position = target;
-                // Apuntar hacia el cuerpo celeste
                 self.camera.target = self.warp_target_body_pos;
             }
         } else if let Some(target) = self.target_position {
-            // Interpolación suave (ease-in-out)
             let t = self.warp_progress;
             let smooth_t = t * t * (3.0 - 2.0 * t);
             
@@ -130,7 +126,6 @@ impl CameraController {
                 self.start_warp_pos.y + (target.y - self.start_warp_pos.y) * smooth_t,
                 self.start_warp_pos.z + (target.z - self.start_warp_pos.z) * smooth_t,
             );
-            // Durante el warp, interpolar también el target de la cámara
             let start_target = self.camera.target;
             self.camera.target = Vector3::new(
                 start_target.x + (self.warp_target_body_pos.x - start_target.x) * smooth_t * 0.5,
@@ -144,7 +139,6 @@ impl CameraController {
         let direction = (self.camera.position - collision_point).normalized();
         let new_pos = collision_point + direction * safe_distance;
         
-        // Mantener la dirección de vista hacia el mismo punto
         let view_dir = self.camera.target - self.camera.position;
         self.camera.position = new_pos;
         self.camera.target = new_pos + view_dir;

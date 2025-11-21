@@ -31,7 +31,6 @@ impl Spaceship {
 
     pub fn get_position(&self, camera_pos: Vector3, camera_target: Vector3) -> Vector3 {
         if self.orbit_demo {
-            // Órbita vertical inclinada 15° alrededor del origen
             let a = self.orbit_angle;
             let y = self.orbit_radius * a.sin();
             let z = self.orbit_radius * a.cos();
@@ -48,9 +47,7 @@ impl Spaceship {
 
     pub fn draw<D: RaylibDraw3D>(&self, d: &mut D, model: &Model, camera_pos: Vector3, camera_target: Vector3) {
         let position = self.get_position(camera_pos, camera_target);
-        // Dirección para la orientación
         let forward = if self.orbit_demo {
-            // Tangente de la órbita inclinada en YZ
             let a = self.orbit_angle;
             let dy = self.orbit_radius * a.cos();
             let dz = -self.orbit_radius * a.sin();
@@ -61,7 +58,7 @@ impl Spaceship {
         } else {
             (camera_target - camera_pos).normalized()
         };
-        let yaw = forward.z.atan2(forward.x); // rad
+        let yaw = forward.z.atan2(forward.x);
         let yaw_degrees = yaw.to_degrees();
         d.draw_model_ex(
             model,
@@ -71,7 +68,6 @@ impl Spaceship {
             Vector3::new(self.scale, self.scale, self.scale),
             self.color,
         );
-        // Indicador frontal
         let nose = position + forward * (self.scale * 2.0);
         d.draw_line_3D(position, nose, Color::SKYBLUE);
     }

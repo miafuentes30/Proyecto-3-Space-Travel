@@ -17,7 +17,6 @@ impl CollisionSystem {
     ) -> Option<Vector3> {
         for body in bodies {
             if body.check_collision(position, self.safe_distance) {
-                // Calcular posición segura
                 let direction = (position - body.position).normalized();
                 let safe_pos = body.position + direction * (body.radius + self.safe_distance);
                 return Some(safe_pos);

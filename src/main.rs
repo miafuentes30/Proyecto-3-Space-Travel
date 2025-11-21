@@ -28,7 +28,6 @@ fn main() {
 
     rl.set_target_fps(60);
 
-    // Cargar modelos
     let mut sphere_model = rl.load_model(&thread, "assets/models/sphere.obj")
         .expect("No se pudo cargar sphere.obj");
     let ship_model = rl.load_model(&thread, "assets/models/nave.obj")
@@ -36,7 +35,6 @@ fn main() {
     let sky_tex = rl.load_texture(&thread, "assets/textures/skybox.png").ok();
     let sky_model = rl.load_model(&thread, "assets/models/sphere.obj").ok();
 
-    // Inicializar sistemas
     let mut camera_controller = CameraController::new(Vector3::new(0.0, 30.0, 50.0));
     let mut spaceship = Spaceship::new();
     let skybox = Skybox::new(1000.0, sky_model, sky_tex);
@@ -45,9 +43,7 @@ fn main() {
     let mut warp_effect = WarpEffect::new();
     let mut shader_manager = ShaderManager::new(&mut rl, &thread);
 
-    // Crear sistema solar
     let mut celestial_bodies = create_solar_system();
-    // Estilos por shader: no cargamos texturas PNG
 
     // Variables de estado
     let mut show_orbits = true;
@@ -56,13 +52,12 @@ fn main() {
     let mut elapsed_time = 0.0f32;
     let mut texture_cache: Vec<Texture2D> = Vec::new();
     let mut frame_count = 0u32;
-    let texture_refresh_rate = 10; // Regenerar texturas cada 10 frames
+    let texture_refresh_rate = 10;
 
     while !rl.window_should_close() {
         let delta_time = rl.get_frame_time();
         elapsed_time += delta_time;
 
-        // Manejar input
         handle_input(&rl, &mut camera_controller, &celestial_bodies, &mut warp_effect, &mut spaceship, &mut top_down);
 
         if rl.is_key_pressed(KeyboardKey::KEY_O) {
@@ -72,7 +67,6 @@ fn main() {
             show_info = !show_info;
         }
 
-        // Actualizar sistemas
         camera_controller.update(&rl, delta_time);
         if top_down {
             camera_controller.camera.position = Vector3::new(0.0, 250.0, 0.01);
@@ -82,7 +76,6 @@ fn main() {
         spaceship.update(delta_time);
         warp_effect.update(delta_time);
 
-        // Comprobar colisiones
         if let Some(safe_pos) = collision_system.check_and_resolve(
             camera_controller.camera.position,
             &celestial_bodies,
@@ -90,12 +83,11 @@ fn main() {
             camera_controller.apply_collision(safe_pos, 2.0);
         }
 
-        // Renderizado
         let mut d = rl.begin_drawing(&thread);
         
         d.clear_background(Color::BLACK);
 
-        // Generar texturas CPU (usar nombres para shaders específicos) solo una vez
+        // Generar texturas una sola vez
         if texture_cache.is_empty() {
             for body in &celestial_bodies {
                 let img = shader_manager.create_texture_for_body_named(
@@ -113,11 +105,9 @@ fn main() {
         {
             let mut d3 = d.begin_mode3D(camera_controller.camera);
 
-            // Dibujar skybox y estrellas (fijo en el origen)
             skybox.draw(&mut d3, Vector3::zero());
             skybox.draw_stars(&mut d3, Vector3::zero());
 
-            // Dibujar órbitas
             if show_orbits {
                 for body in &celestial_bodies {
                     if !body.is_sun && body.parent.is_none() {
@@ -131,14 +121,10 @@ fn main() {
                 }
             }
 
-            // Dibujar cuerpos celestes con texturas CPU (software rasterizer)
             let mut saturn_pos: Option<Vector3> = None;
             for (idx, body) in celestial_bodies.iter().enumerate() {
                 if idx < texture_cache.len() {
-                    // Crear un modelo temporal con la textura aplicada
                     let tex = &texture_cache[idx];
-                    
-                    // Actualizar material del modelo de esfera
                     unsafe {
                         use raylib::consts::MaterialMapIndex;
                         let mat_ptr = sphere_model.materials_mut().as_mut_ptr();
@@ -146,7 +132,6 @@ fn main() {
                             .texture = **tex;
                     }
                     
-                    // Dibujar esfera 3D con textura
                     d3.draw_model_ex(
                         &sphere_model,
                         body.position,
@@ -159,35 +144,30 @@ fn main() {
                 
                 if body.name == "Saturno" { saturn_pos = Some(body.position); }
                 if body.is_sun {
-                    // Glow solar muy reducido
                     d3.draw_sphere(body.position, body.radius * 1.08, Color::new(255, 220, 100, 8));
                 }
             }
             if let Some(pos) = saturn_pos {
-                // Anillos de Saturno con bandas concéntricas (sin cuadrícula)
-                let segments = 180; // Más segmentos para suavidad
-                let tilt_angle = 15.0_f32.to_radians(); // Inclinación de 15° para profundidad
+                let segments = 180;
+                let tilt_angle = 15.0_f32.to_radians();
                 
-                // Definir bandas de anillos con radios interior/exterior y color
                 let ring_bands = [
-                    (5.2, 5.8, Color::new(200, 180, 140, 140)),   // Banda A interna
-                    (5.8, 6.3, Color::new(190, 170, 130, 150)),   // Banda A media
-                    (6.3, 6.8, Color::new(180, 160, 120, 135)),   // Banda A externa
-                    // Gap de Cassini (6.8 - 7.1) - no renderizar
-                    (7.1, 7.5, Color::new(210, 190, 150, 145)),   // Banda B interna
-                    (7.5, 8.0, Color::new(195, 175, 140, 155)),   // Banda B media
-                    (8.0, 8.5, Color::new(185, 165, 130, 140)),   // Banda B externa
-                    (8.5, 9.0, Color::new(170, 150, 115, 120)),   // Banda C exterior
+                    (5.2, 5.8, Color::new(200, 180, 140, 140)),
+                    (5.8, 6.3, Color::new(190, 170, 130, 150)),
+                    (6.3, 6.8, Color::new(180, 160, 120, 135)),
+                    // Gap de Cassini (6.8 - 7.1)
+                    (7.1, 7.5, Color::new(210, 190, 150, 145)),
+                    (7.5, 8.0, Color::new(195, 175, 140, 155)),
+                    (8.0, 8.5, Color::new(185, 165, 130, 140)),
+                    (8.5, 9.0, Color::new(170, 150, 115, 120)),
                 ];
                 
                 for (ring_inner, ring_outer, base_color) in &ring_bands {
-                    // Dibujar múltiples círculos concéntricos para rellenar la banda
-                    let num_circles = 15; // Número de círculos concéntricos por banda
+                    let num_circles = 15;
                     for circle_idx in 0..num_circles {
                         let t = circle_idx as f32 / num_circles as f32;
                         let radius = ring_inner + (ring_outer - ring_inner) * t;
                         
-                        // Variación de color por profundidad de la banda
                         let brightness = 1.0 + (t - 0.5) * 0.2;
                         let circle_color = Color::new(
                             (base_color.r as f32 * brightness).clamp(0.0, 255.0) as u8,
@@ -196,12 +176,10 @@ fn main() {
                             base_color.a,
                         );
                         
-                        // Dibujar el círculo completo
                         for i in 0..segments {
                             let a1 = (i as f32 / segments as f32) * std::f32::consts::TAU;
                             let a2 = ((i + 1) as f32 / segments as f32) * std::f32::consts::TAU;
                             
-                            // Variación procedural para textura
                             let noise_val = ((a1 * 23.0).sin() * 0.5 + 0.5) * 0.1;
                             let varied_brightness = brightness + noise_val - 0.05;
                             let varied_color = Color::new(
@@ -211,7 +189,6 @@ fn main() {
                                 base_color.a,
                             );
                             
-                            // Calcular puntos con inclinación
                             let y_offset = radius * tilt_angle.sin();
                             let z_scale = tilt_angle.cos();
                             
@@ -226,14 +203,12 @@ fn main() {
                                 pos.z + radius * a2.sin() * z_scale
                             );
                             
-                            // Solo líneas horizontales (círculos concéntricos)
                             d3.draw_line_3D(p1, p2, varied_color);
                         }
                     }
                 }
             }
 
-            // Dibujar nave
             spaceship.draw(
                 &mut d3,
                 &ship_model,
@@ -241,13 +216,11 @@ fn main() {
                 camera_controller.camera.target,
             );
 
-            // Dibujar efectos de warp
             if warp_effect.is_active() {
                 warp_effect.draw(&mut d3);
             }
         }
 
-        // UI
         if show_info {
             draw_ui(&mut d, &camera_controller, &celestial_bodies);
         }
@@ -258,55 +231,42 @@ fn main() {
 
 fn create_solar_system() -> Vec<CelestialBody> {
     let mut bodies = vec![
-        // Sol (índice 0)
         CelestialBody::new_sun("Sol", 8.0, Color::new(255, 200, 50, 255)),
         
-        // Mercurio - Rocoso (índice 1)
         CelestialBody::new_planet("Mercurio", 1.5, Color::GRAY, 15.0, 4.0, 2.0),
         
-        // Venus - Gaseoso (índice 2)
         {
             let mut venus = CelestialBody::new_planet("Venus", 2.0, Color::ORANGE, 22.0, 3.5, 1.8);
             venus.body_type = BodyType::GasGiant;
             venus
         },
         
-        // Tierra - Rocoso (índice 3)
         CelestialBody::new_planet("Tierra", 2.2, Color::BLUE, 30.0, 3.0, 1.5),
         
-        // Luna de la Tierra (índice 4)
         CelestialBody::new_moon("Luna", 0.6, Color::LIGHTGRAY, 4.0, 8.0, 1.0, 3),
         
-        // Marte - Gaseoso (índice 5)
         {
             let mut marte = CelestialBody::new_planet("Marte", 1.8, Color::RED, 40.0, 2.5, 1.4);
             marte.body_type = BodyType::GasGiant;
             marte
         },
         
-        // Fobos - Luna de Marte (índice 6)
         CelestialBody::new_moon("Fobos", 0.3, Color::DARKGRAY, 3.5, 12.0, 2.0, 5),
         
-        // Deimos - Luna de Marte (índice 7)
         CelestialBody::new_moon("Deimos", 0.25, Color::GRAY, 5.0, 10.0, 1.5, 5),
         
-        // Jupiter - Rocoso (índice 8)
         CelestialBody::new_planet("Jupiter", 5.0, Color::BROWN, 60.0, 1.3, 1.0),
         
-        // Saturno - Gaseoso (índice 9)
         {
             let mut saturno = CelestialBody::new_planet("Saturno", 4.5, Color::BEIGE, 80.0, 1.0, 0.9);
             saturno.body_type = BodyType::GasGiant;
             saturno
         },
         
-        // Titán - Luna de Saturno (índice 10)
         CelestialBody::new_moon("Titan", 0.8, Color::ORANGE, 7.0, 6.0, 1.0, 9),
         
-        // Urano - Rocoso (índice 11)
         CelestialBody::new_planet("Urano", 3.5, Color::SKYBLUE, 100.0, 0.7, 0.8),
         
-        // Neptuno - Gaseoso (índice 12)
         {
             let mut neptuno = CelestialBody::new_planet("Neptuno", 3.5, Color::DARKBLUE, 120.0, 0.5, 0.7);
             neptuno.body_type = BodyType::GasGiant;
@@ -365,14 +325,12 @@ fn handle_input(
     spaceship: &mut Spaceship,
     top_down: &mut bool,
 ) {
-    // Warp al Sol
     if rl.is_key_pressed(KeyboardKey::KEY_ZERO) {
         let target = Vector3::new(0.0, 20.0, 40.0);
         camera_controller.start_warp(target);
         warp_effect.start(camera_controller.camera.position, target);
     }
     
-    // Warp a planetas con teclas numéricas 1-8
     if rl.is_key_pressed(KeyboardKey::KEY_ONE) && bodies.len() > 1 {
         let target = bodies[1].position + Vector3::new(0.0, 5.0, 15.0);
         camera_controller.start_warp(target);
@@ -414,7 +372,6 @@ fn handle_input(
         warp_effect.start(camera_controller.camera.position, target);
     }
 
-    // Toggle demo de órbita vertical de la nave
     if rl.is_key_pressed(KeyboardKey::KEY_V) {
         spaceship.toggle_orbit_demo();
     }
@@ -423,7 +380,6 @@ fn handle_input(
         *top_down = !*top_down;
     }
 
-    // Regresar a posición inicial del sistema
     if rl.is_key_pressed(KeyboardKey::KEY_R) {
         let home_pos = Vector3::new(0.0, 30.0, 50.0);
         camera_controller.camera.position = home_pos;
@@ -460,5 +416,3 @@ fn draw_ui(d: &mut RaylibDrawHandle, camera: &CameraController, _bodies: &[Celes
         Color::YELLOW,
     );
 }
-
-// (Shader params removed; using procedural CPU textures instead)

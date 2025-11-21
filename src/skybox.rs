@@ -12,9 +12,7 @@ impl Skybox {
     }
 
     pub fn draw<D: RaylibDraw3D>(&self, d: &mut D, _camera_pos: Vector3) {
-        // Dibuja esfera invertida con textura
         if let (Some(model), Some(texture)) = (&self.model, &self.texture) {
-            // Aplicar textura al modelo
             unsafe {
                 use raylib::consts::MaterialMapIndex;
                 let materials = model.materials();
@@ -25,22 +23,20 @@ impl Skybox {
                 }
             }
             
-            // Dibujar esfera invertida fija en el origen (escala negativa en X para ver desde dentro)
+            // Escala negativa en X para invertir esfera
             d.draw_model_ex(
                 model,
-                Vector3::zero(),  // Fijo en el origen, no sigue la cámara
+                Vector3::zero(),
                 Vector3::new(0.0, 1.0, 0.0),
                 0.0,
                 Vector3::new(-self.size, self.size, self.size),
                 Color::WHITE,
             );
         } else {
-            // Fallback si no hay modelo o textura
             d.draw_cube_wires(Vector3::zero(), self.size, self.size, self.size, Color::new(30, 30, 60, 80));
         }
     }
 
     pub fn draw_stars<D: RaylibDraw3D>(&self, _d: &mut D, _camera_pos: Vector3) {
-        // Ya no dibujamos estrellas procedurales, la textura las contiene
     }
 }

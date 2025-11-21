@@ -17,7 +17,7 @@ struct WarpParticle {
 impl WarpEffect {
     pub fn new() -> Self {
         Self {
-            particle_count: 0,  // Sin partículas visibles
+            particle_count: 0,
             particles: Vec::new(),
             active: false,
             progress: 0.0,
@@ -25,7 +25,6 @@ impl WarpEffect {
     }
 
     pub fn start(&mut self, _start_pos: Vector3, _end_pos: Vector3) {
-        // Desactivamos las partículas para evitar la esfera visible
         self.particles.clear();
         self.active = true;
         self.progress = 0.0;
@@ -40,7 +39,6 @@ impl WarpEffect {
             }
         }
         
-        // Limpiar partículas viejas si las hay
         self.particles.retain_mut(|particle| {
             particle.lifetime += delta_time;
             particle.position = particle.position + particle.velocity * delta_time;
@@ -49,8 +47,6 @@ impl WarpEffect {
     }
 
     pub fn draw<D: RaylibDraw3D>(&self, _d: &mut D) {
-        // No dibujamos nada - el efecto visual está desactivado
-        // Si quieres un efecto más sutil, puedes agregar líneas de velocidad aquí
     }
 
     pub fn is_active(&self) -> bool {

@@ -57,7 +57,7 @@ impl std::ops::Add for Vec3 {
     fn add(self, o: Vec3) -> Vec3 { Vec3::new(self.x + o.x, self.y + o.y, self.z + o.z) }
 }
 
-// ===== FUNCIONES DE RUIDO =====
+// FUNCIONES DE RUIDO 
 fn hash(p: Vec2) -> f32 { (p.dot(Vec2::new(127.1, 311.7)).sin() * 43758.5453).fract() }
 
 fn noise(p: Vec2) -> f32 {
@@ -69,10 +69,10 @@ fn noise(p: Vec2) -> f32 {
     a*(1.0-f.x)*(1.0-f.y) + b*f.x*(1.0-f.y) + c*(1.0-f.x)*f.y + d*f.x*f.y
 }
 
-// Ruido con mezcla en zona de la costura vertical (u=0/1) para evitar línea
+// Ruido con mezcla en zona de la costura vertical (u=0/1) para evitar linea
 fn seam_noise(p: Vec2) -> f32 {
     let base = noise(p);
-    let blend = 0.03; // ancho de zona de mezcla
+    let blend = 0.03; 
     if p.x < blend {
         let other = noise(Vec2::new(p.x + 1.0, p.y));
         let t = smoothstep(0.0, blend, p.x);
@@ -102,9 +102,9 @@ fn mix_vec3(a: Vec3, b: Vec3, t: f32) -> Vec3 {
     Vec3::new(mix_f32(a.x, b.x, t), mix_f32(a.y, b.y, t), mix_f32(a.z, b.z, t))
 }
 
-// ===== SHADERS =====
+// SHADERS 
 
-/// SOL - Gaseoso amarillo-naranja con turbulencia y plasma
+/// SOL 
 fn sol_shader(uv: Vec2, time: f32) -> Vec3 {
     let turb1 = fbm(Vec2::new(uv.x * 4.0 + time * 0.08, uv.y * 4.0 - time * 0.05), 4);
     let turb2 = fbm(Vec2::new(uv.x * 8.0 - time * 0.12, uv.y * 8.0 + time * 0.1), 3);
@@ -129,7 +129,7 @@ fn sol_shader(uv: Vec2, time: f32) -> Vec3 {
     fc
 }
 
-/// MERCURIO - Agua/líquido metálico gris con ondas
+/// MERCURIO
 fn mercurio_shader(uv: Vec2, time: f32) -> Vec3 {
     let cx = uv.x - 0.5; let cy = uv.y - 0.5;
     let dist = (cx*cx + cy*cy).sqrt();
@@ -155,7 +155,7 @@ fn mercurio_shader(uv: Vec2, time: f32) -> Vec3 {
     color
 }
 
-/// VENUS - Atmósfera densa naranja/amarilla con nubes tóxicas
+/// VENUS 
 fn venus_shader(uv: Vec2, time: f32) -> Vec3 {
     let clouds1 = fbm(Vec2::new(uv.x * 3.0 + time * 0.05, uv.y * 4.0 + time * 0.02), 5);
     let clouds2 = fbm(Vec2::new(uv.x * 6.0 - time * 0.03, uv.y * 5.0 - time * 0.04), 4);
@@ -170,9 +170,8 @@ fn venus_shader(uv: Vec2, time: f32) -> Vec3 {
     color * 0.95
 }
 
-/// TIERRA - Océanos y continentes rocosos
+/// TIERRA 
 fn tierra_shader(uv: Vec2, _time: f32) -> Vec3 {
-    // Usar múltiples octavas de ruido para continentes irregulares
     let cont1 = fbm(Vec2::new(uv.x * 3.5 + 0.5, uv.y * 3.5 + 0.3), 6);
     let cont2 = noise(Vec2::new(uv.x * 7.0, uv.y * 7.0)) * 0.3;
     let cont = cont1 + cont2 * 0.5;
@@ -186,31 +185,25 @@ fn tierra_shader(uv: Vec2, _time: f32) -> Vec3 {
     let snow = Vec3::new(0.92, 0.92, 0.95);
     
     let mut color = if cont < 0.4 {
-        // Océano con variación de profundidad
         let depth_var = noise(Vec2::new(uv.x * 12.0, uv.y * 12.0));
         mix_vec3(ocean_deep, ocean_shallow, depth_var)
     } else if cont < 0.5 {
-        // Costa/tierra baja
         let t = (cont - 0.4) / 0.1;
         mix_vec3(ocean_shallow, land_low, t)
     } else if cont < 0.65 {
-        // Tierra media con textura
         let detail = noise(Vec2::new(uv.x * 20.0, uv.y * 20.0)) * 0.15;
         let t = (cont - 0.5) / 0.15;
         mix_vec3(land_low, land_mid, t) * (0.9 + detail)
     } else if cont < 0.8 {
-        // Tierra alta/montañas
         let rock = noise(Vec2::new(uv.x * 25.0, uv.y * 25.0)) * 0.2;
         let t = (cont - 0.65) / 0.15;
         mix_vec3(land_high, mountain, t) * (0.85 + rock)
     } else {
-        // Picos nevados
         let snow_var = noise(Vec2::new(uv.x * 30.0, uv.y * 30.0)) * 0.1;
         let t = (cont - 0.8) / 0.2;
         mix_vec3(mountain, snow, t) * (0.95 + snow_var)
     };
     
-    // Casquetes polares
     let lat = (uv.y - 0.5).abs() * 2.0;
     if lat > 0.82 {
         let polar = (lat - 0.82) / 0.18;
@@ -220,15 +213,13 @@ fn tierra_shader(uv: Vec2, _time: f32) -> Vec3 {
     color
 }
 
-/// MARTE - Desierto rocoso rojo con cráteres y variación
+/// MARTE
 fn marte_shader(uv: Vec2, _time: f32) -> Vec3 {
-    // Terreno base con múltiples capas de ruido
     let terrain1 = fbm(Vec2::new(uv.x * 4.0, uv.y * 4.0), 6);
     let terrain2 = noise(Vec2::new(uv.x * 8.0 + 2.0, uv.y * 8.0 + 1.5)) * 0.4;
     let terrain3 = noise(Vec2::new(uv.x * 16.0, uv.y * 16.0)) * 0.2;
     let terrain = terrain1 + terrain2 * 0.5 + terrain3 * 0.3;
     
-    // Cráteres de diferentes tamaños
     let crater1 = noise(Vec2::new(uv.x * 10.0, uv.y * 10.0));
     let crater2 = noise(Vec2::new(uv.x * 20.0 + 5.0, uv.y * 20.0 + 3.0));
     let crater3 = noise(Vec2::new(uv.x * 35.0, uv.y * 35.0));
@@ -236,13 +227,10 @@ fn marte_shader(uv: Vec2, _time: f32) -> Vec3 {
                 + smoothstep(0.58, 0.68, crater2) * 0.15
                 + smoothstep(0.6, 0.7, crater3) * 0.1;
     
-    // Paleta de colores marcianos
     let c_light = Vec3::new(0.85, 0.45, 0.2);    // Naranja claro
-    let c_mid = Vec3::new(0.7, 0.32, 0.12);      // Rojo óxido
+    let c_mid = Vec3::new(0.7, 0.32, 0.12);      // Rojo oxido
     let c_dark = Vec3::new(0.5, 0.22, 0.08);     // Rojo oscuro
-    let c_shadow = Vec3::new(0.35, 0.15, 0.05);  // Sombra de cráteres
-    
-    // Mezcla basada en elevación
+    let c_shadow = Vec3::new(0.35, 0.15, 0.05);  // Sombra 
     let elev = (terrain * 0.7).clamp(0.0, 1.0);
     let mut color = if elev < 0.35 {
         mix_vec3(c_dark, c_mid, elev / 0.35)
@@ -253,15 +241,12 @@ fn marte_shader(uv: Vec2, _time: f32) -> Vec3 {
         c_light * (0.95 + rock_detail)
     };
     
-    // Aplicar cráteres (oscurecen el terreno)
     color = color * (1.0 - craters);
     color = mix_vec3(color, c_shadow, craters * 0.6);
     
-    // Textura de polvo/arena fina
     let dust = noise(Vec2::new(uv.x * 50.0, uv.y * 50.0)) * 0.08;
     color = color * (0.96 + dust);
     
-    // Casquetes polares pequeños
     let lat = (uv.y - 0.5).abs() * 2.0;
     if lat > 0.9 {
         let ice = Vec3::new(0.9, 0.88, 0.85);
@@ -272,7 +257,7 @@ fn marte_shader(uv: Vec2, _time: f32) -> Vec3 {
     color
 }
 
-/// JUPITER - Bandas y Gran Mancha Roja
+/// JUPITER 
 fn jupiter_shader(uv: Vec2, time: f32) -> Vec3 {
     let band_y = uv.y + fbm(Vec2::new(uv.x * 8.0 + time * 0.02, uv.y * 2.0), 3) * 0.08;
     let band = ((band_y * 25.0).sin() * 0.5 + 0.5);
@@ -281,7 +266,6 @@ fn jupiter_shader(uv: Vec2, time: f32) -> Vec3 {
     let c3 = Vec3::new(0.55, 0.4, 0.3);
     let mix_val = (band + turb).clamp(0.0, 1.0);
     let mut color = if mix_val < 0.5 { mix_vec3(c1, c2, mix_val / 0.5) } else { mix_vec3(c2, c3, (mix_val - 0.5) / 0.5) };
-    // Gran Mancha Roja
     let spot_x = uv.x - 0.65; let spot_y = uv.y - 0.55;
     let spot_dist = (spot_x * spot_x * 4.0 + spot_y * spot_y * 16.0).sqrt();
     if spot_dist < 0.15 {
@@ -292,7 +276,7 @@ fn jupiter_shader(uv: Vec2, time: f32) -> Vec3 {
     color
 }
 
-/// SATURNO - Bandas suaves beige/dorado
+/// SATURNO 
 fn saturno_shader(uv: Vec2, time: f32) -> Vec3 {
     let band_y = uv.y + noise(Vec2::new(uv.x * 6.0 + time * 0.015, uv.y * 3.0)) * 0.06;
     let band = ((band_y * 20.0).sin() * 0.5 + 0.5);
@@ -303,7 +287,7 @@ fn saturno_shader(uv: Vec2, time: f32) -> Vec3 {
     if mix_val < 0.5 { mix_vec3(c1, c2, mix_val / 0.5) } else { mix_vec3(c2, c3, (mix_val - 0.5) / 0.5) }
 }
 
-/// URANO - Azul-verdoso uniforme con ligeras bandas
+/// URANO 
 fn urano_shader(uv: Vec2, time: f32) -> Vec3 {
     let band = ((uv.y * 15.0 + time * 0.01).sin() * 0.5 + 0.5) * 0.1;
     let atm = fbm(Vec2::new(uv.x * 4.0 + time * 0.01, uv.y * 4.0), 3) * 0.1;
@@ -311,7 +295,7 @@ fn urano_shader(uv: Vec2, time: f32) -> Vec3 {
     mix_vec3(c1, c2, (band + atm).clamp(0.0, 1.0))
 }
 
-/// NEPTUNO - Azul intenso con tormentas
+/// NEPTUNO 
 fn neptuno_shader(uv: Vec2, time: f32) -> Vec3 {
     let band = ((uv.y * 18.0 + time * 0.02).sin() * 0.5 + 0.5);
     let turb = fbm(Vec2::new(uv.x * 10.0 + time * 0.04, uv.y * 8.0), 4) * 0.2;
@@ -319,14 +303,13 @@ fn neptuno_shader(uv: Vec2, time: f32) -> Vec3 {
     let c3 = Vec3::new(0.1, 0.2, 0.6);
     let mix_val = (band * 0.5 + turb).clamp(0.0, 1.0);
     let mut color = if mix_val < 0.5 { mix_vec3(c1, c2, mix_val / 0.5) } else { mix_vec3(c2, c3, (mix_val - 0.5) / 0.5) };
-    // Gran Mancha Oscura
     let spot_x = uv.x - 0.4; let spot_y = uv.y - 0.45;
     let spot_dist = (spot_x * spot_x * 3.0 + spot_y * spot_y * 12.0).sqrt();
     if spot_dist < 0.12 { color = mix_vec3(color, c3 * 0.7, 1.0 - spot_dist / 0.12); }
     color
 }
 
-/// LUNA - Cráteres grises
+/// LUNA 
 fn moon_shader(uv: Vec2, moon_color: Vec3, _time: f32) -> Vec3 {
     let cr1 = smoothstep(0.5, 0.6, noise(uv * 10.0)) * 0.4;
     let cr2 = smoothstep(0.55, 0.65, noise(uv * 25.0)) * 0.2;
@@ -338,13 +321,13 @@ fn moon_shader(uv: Vec2, moon_color: Vec3, _time: f32) -> Vec3 {
     color
 }
 
-// ===== SHADER MANAGER =====
+//  SHADER MANAGER 
 pub struct ShaderManager { textures: HashMap<BodyType, Image> }
 
 impl ShaderManager {
     pub fn new(_rl: &mut RaylibHandle, _thread: &RaylibThread) -> Self {
-        println!("\n🔄 Cargando shaders CPU...");
-        println!("✅ Shader Manager iniciado\n");
+        println!("\nCargando shaders CPU...");
+        println!(" Shader Manager iniciado\n");
         ShaderManager { textures: HashMap::new() }
     }
 
